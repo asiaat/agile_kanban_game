@@ -1,15 +1,26 @@
 """HTML generator for Sudoku puzzles - print-optimized."""
 
+import os
+import re
+from datetime import datetime
+
 from sudoku_game.core import Sudoku, generate_puzzle
 
 
-def generate_html(puzzle, solution, filename="sudoku.html", include_solution=True):
+def generate_html(puzzle, solution, filename="sudoku.html", include_solution=True, output_dir="output"):
     """Generate printable HTML file from puzzle."""
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Ensure .html extension
+    if not filename.endswith('.html'):
+        filename += '.html'
+    
+    filepath = os.path.join(output_dir, filename)
     
     n = puzzle.n
     size = puzzle.size
-    
-    # Determine cell size based on board size
     cell_size = 40 if size == 9 else 30
     
     # Generate grid HTML
@@ -146,35 +157,65 @@ def generate_html(puzzle, solution, filename="sudoku.html", include_solution=Tru
 </html>
 '''
     
-    with open(filename, "w", encoding="utf-8") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(html)
     
-    return filename
+    return filepath
 
 
 def main():
     import argparse
     import os
     
+    import re
+    
     parser = argparse.ArgumentParser(description="Generate Sudoku HTML")
-    parser.add_argument("--size", type=int, default=3, help="Board size: 2, 3, or 4")
-    parser.add_argument("--difficulty", type=int, default=30, help="Cells to remove")
-    parser.add_argument("--output", type=str, default="sudoku.html", help="Output filename")
+    parser.add_argument("--size", type=int, default=3, choices=[2, 3, 4], help="Board size: 2 (4x4), 3 (9x9), 4 (16x16)")
+    parser.add_argument("--difficulty", type=int, default=30, help="Cells to remove: 20=easy, 30=medium, 45=hard")
+    parser.add_argument("--output", type=str, default="", help="Output filename")
+    parser.add_argument("--output-dir", type=str, default="output", help="Output directory")
     parser.add_argument("--no-solution", action="store_true", help="Exclude solution")
     
     args = parser.parse_args()
     
+    args.difficulty = args.difficulty or 30
+    
+    # Validate difficulty range (cells to remove)
+    args.difficulty = max(5, min(60, args.difficulty))
+    
+    # Board size string (e.g., "4x4", "9x9")
+    size_str = f"{args.size*args.size}x{args.size*args.size}"
+    
+    # Use timestamp only if no custom filename provided
+    if not args.output:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        args.output = f"{size_str}_{timestamp}.html"
+    elif args.output:
+        # Only add timestamp and size if filename doesn't have numeric suffix pattern
+        if not re.search(r'_\d{12}$', args.output):
+            base, ext = os.path.splitext(args.output)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Add size prefix if not present
+            if not base.startswith(size_str):
+                args.output = f"{size_str}_{base}_{timestamp}{ext}"
+            else:
+                args.output = f"{base}_{timestamp}{ext}"
+        if not ext:
+            args.output += '.html'
+    
     puzzle, solution = generate_puzzle(n=args.size, difficulty=args.difficulty)
     
-    filename = generate_html(
+    filepath = generate_html(
         puzzle, 
         solution, 
         filename=args.output,
-        include_solution=not args.no_solution
+        include_solution=not args.no_solution,
+        output_dir=args.output_dir
     )
     
-    print(f"Generated: {filename}")
+    print(f"Generated: {filepath}")
     print(f"Board: {args.size*args.size}x{args.size*args.size}")
+    print(f"Difficulty: {args.difficulty} cells removed")
 
 
 if __name__ == "__main__":

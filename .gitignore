@@ -140,3 +140,27 @@ vite.config.ts.timestamp-*
 
 venv/
 .venv/
+
+output/
+*/output/   
+
+*.pyc
+__pycache__/    
+*/__pycache__/
+*/*.pyc
+*/*/__pycache__/
+*/*.pyo
+*/*/*.pyo
+*.pyd
+*/*.pyd
+*/*/*.pyd
+*/__pycache__
+sudoku_game/__pycache__/
+sudoku_game/*.pyc
+sudoku_game/*.pyo
+sudoku_game/*.pyd
+
+
+
+
+

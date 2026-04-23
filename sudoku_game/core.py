@@ -116,48 +116,51 @@ class Sudoku:
         return True
 
 
-def generate_puzzle(n=3, difficulty=40):
+def generate_puzzle(n=3, difficulty=40, max_attempts=5):
     """
     Generate a new Sudoku puzzle.
 
     Args:
         n: Board size (n=3 for 9x9, n=2 for 4x4)
         difficulty: Number of cells to remove (more = harder)
+        max_attempts: Max attempts to generate a valid puzzle
 
     Returns:
         A tuple (puzzle, solution) as Sudoku objects
     """
-    # Create solved board
-    game = Sudoku(n)
-    _fill_diagonal(game)
+    for attempt in range(max_attempts):
+        # Create solved board from scratch
+        game = Sudoku(n)
+        
+        if game.solve():
+            # Create puzzle by removing cells
+            puzzle = game.copy()
+            cells_removed = 0
 
-    if game.solve():
-        # Create puzzle by removing cells
-        puzzle = game.copy()
-        cells_removed = 0
+            # Get all positions and shuffle
+            positions = [(i, j) for i in range(game.size) for j in range(game.size)]
+            random.shuffle(positions)
 
-        while cells_removed < difficulty:
-            i = random.randint(0, game.size - 1)
-            j = random.randint(0, game.size - 1)
+            for i, j in positions[:difficulty]:
+                if puzzle.board[i][j] != 0:
+                    puzzle.board[i][j] = 0
+                    cells_removed += 1
 
-            if puzzle.board[i][j] != 0:
-                puzzle.board[i][j] = 0
-                cells_removed += 1
-
-        return puzzle, game
+            return puzzle, game
 
     raise RuntimeError("Failed to generate puzzle")
 
 
 def _fill_diagonal(game):
     """Fill diagonal boxes (independent of each other)."""
-    for i in range(0, game.size, game.n):
-        filled = 0
+    for box_idx in range(game.n):
+        box_start = box_idx * game.n
+        
         nums = list(range(1, game.size + 1))
         random.shuffle(nums)
-
-        for j in range(game.n):
-            for k in range(game.n):
-                if filled < len(nums):
-                    game.board[i + j][i + k] = nums[filled]
-                    filled += 1
+        idx = 0
+        
+        for i in range(game.n):
+            for j in range(game.n):
+                game.board[box_start + i][box_start + j] = nums[idx]
+                idx += 1
